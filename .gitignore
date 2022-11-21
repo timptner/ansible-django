@@ -1,0 +1,8 @@
+# ansible
+inventory
+
+# python
+venv
+
+# vagrant
+.vagrant/
