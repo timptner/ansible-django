@@ -1,5 +1,7 @@
 # ansible
-inventory
+inventories/
+roles/
+collections/
 
 # python
 venv
