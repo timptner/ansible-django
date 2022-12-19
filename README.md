@@ -1,6 +1,6 @@
 # Ansible Django Playbook
 
-This ansible playbook sets up a single server Django instance including wagtail cms for rocky linux 8.
+This ansible playbook sets up a single server Django instance including wagtail cms for rocky linux 9.
 
 > This repo is a WIP
 

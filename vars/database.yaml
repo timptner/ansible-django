@@ -1,8 +1,0 @@
-postgresql_databases:
-  - name: farafmb_db
-postgresql_users:
-  - name: farafmb_user
-    password: supersecure
-postgresql_python_library: python3-psycopg2
-postgresql_locales:
-  - 'de_DE.UTF-8'

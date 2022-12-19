@@ -1,0 +1,20 @@
+# Application
+app_directory: /srv/farafmb
+app_user: www-data
+app_admin_email: aiven@timptner.de
+app_admin_user: aiven
+app_admin_password: secret
+
+# Database
+postgresql_python_library: python3-psycopg2
+postgresql_locales:
+  - 'en_US.UTF-8'
+  - 'de_DE.UTF-8'
+postgresql_databases:
+  - name: farafmb_db
+    lc_collate: 'de_DE.UTF-8'
+    lc_ctype: 'de_DE.UTF-8'
+    owner: farafmb_user
+postgresql_users:
+  - name: farafmb_user
+    password: super-secret

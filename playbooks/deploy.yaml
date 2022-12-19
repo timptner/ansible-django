@@ -1,0 +1,109 @@
+---
+- hosts: all
+  become: yes
+
+  vars_files:
+    - ../vars.yaml
+
+  pre_tasks:
+    - name: Add required environment variables globally
+      lineinfile:
+        dest: /etc/environment
+        regexp: '^{{ item.name }}='
+        line: "{{ item.name }}={{ item.value }}"
+        state: present
+      loop:  # with_items
+        - name: DJANGO_SETTINGS_MODULE
+          value: farafmb.settings.production
+        - name: DJANGO_SECRET_KEY
+          value: "1_7*)dm3vaermsots4bap97=_p33f-t3ot2fr@q%(-_q8kzc(w"
+        - name: DB_HOST
+          value: 127.0.0.1
+        - name: DB_PORT
+          value: 5432
+        - name: DB_NAME
+          value: "{{ postgresql_databases[0]['name'] }}"
+        - name: DB_USER
+          value: "{{ postgresql_users[0]['name'] }}"
+        - name: DB_PASSWORD
+          value: "{{ postgresql_users[0]['password'] }}"
+
+  tasks:
+    - name: Checkout latest release
+      ansible.builtin.git:
+        repo: "https://github.com/timptner/farafmb-cms.git"
+        version: dev
+        single_branch: yes
+        dest: "{{ app_directory }}"
+      # become: true
+      # become_user: "{{ app_user }}"
+      notify: restart gunicorn
+
+    # - name: Copy dotenv file
+    #   ansible.builtin.template:
+    #     src: ../templates/.env
+    #     dest: "{{ app_directory }}/.env"
+    #     owner: "{{ app_user }}"
+    #     group: "{{ app_user }}"
+    #     mode: 0644
+
+    - name: Create virtual environment and upgrade pip
+      ansible.builtin.pip:
+        name: pip
+        virtualenv: "{{ app_directory }}/venv"
+        virtualenv_command: "python3 -m venv"
+        state: latest
+
+    - name: Install gunicorn and psycopg2 into virtual environment
+      ansible.builtin.pip:
+        name:
+          - psycopg2
+          - gunicorn
+        virtualenv: "{{ app_directory }}/venv"
+        virtualenv_command: "python3 -m venv"
+        state: latest
+
+    - name: Install app dependencies
+      ansible.builtin.pip:
+        requirements: "{{ app_directory }}/requirements.txt"
+        virtualenv: "{{ app_directory }}/venv"
+        virtualenv_command: "python3 -m venv"
+
+    - name: Migrate database
+      ansible.builtin.command: "{{ app_directory }}/venv/bin/python manage.py migrate"
+      args:
+        chdir: "{{ app_directory }}"
+
+    # - name: Collect static files
+    #   ansible.builtin.command: "{{ app_directory }}/venv/bin/python manage.py collectstatic --no-input"
+    #   args:
+    #     chdir: "{{ app_directory }}"
+
+    - name: Ensure app files has correct user
+      ansible.builtin.file:
+        path: "{{ app_directory }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        recurse: yes
+
+    - name: Ensure default admin user exists
+      ansible.builtin.command: "{{ app_directory }}/venv/bin/python manage.py createsuperuser --no-input"
+      args:
+        chdir: "{{ app_directory }}"
+      environment:
+        DJANGO_SUPERUSER_USERNAME: "{{ app_admin_user }}"
+        DJANGO_SUPERUSER_EMAIL: "{{ app_admin_email }}"
+        DJANGO_SUPERUSER_PASSWORD: "{{ app_admin_password }}"
+
+
+  # handlers:
+  #   - name: Restart gunicorn
+  #     ansible.builtin.service:
+  #       name: gunicorn
+  #       state: restarted
+
+  #   - name: Reload nginx
+  #     ansible.builtin.service:
+  #       name: nginx
+  #       state: reloaded
